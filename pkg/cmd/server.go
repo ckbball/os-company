@@ -8,14 +8,9 @@ import (
   "os"
   "strconv"
 
-  "github.com/go-redis/cache/v7"
-  "github.com/go-redis/redis/v7"
-  _ "github.com/go-sql-driver/mysql"
-  "github.com/vmihailenco/msgpack/v4"
-
-  "github.com/ckbball/dev-team/pkg/logger"
-  teamGrpc "github.com/ckbball/dev-team/pkg/protocol/grpc"
-  v1 "github.com/ckbball/dev-team/pkg/service/v1"
+  "github.com/ckbball/os-company/pkg/logger"
+  companyGrpc "github.com/ckbball/os-company/pkg/protocol/grpc"
+  v1 "github.com/ckbball/os-company/pkg/service/v1"
 )
 
 // Config is configuration for Server
@@ -45,7 +40,7 @@ type Config struct {
   LogTimeFormat string
 
   // user service address
-  UserSvcAddress string
+  JobSvcAddress string
 }
 
 // RunServer runs gRPC server and HTTP gateway
@@ -71,7 +66,7 @@ func RunServer() error {
     cfg.DatastoreDBPassword = os.Getenv("DB_PASSWORD")
     cfg.DatastoreDBSchema = os.Getenv("DB_SCHEMA")
     cfg.RedisAddress = os.Getenv("REDIS_ADDRESS")
-    cfg.UserSvcAddress = os.Getenv("USER_ADDRESS")
+    cfg.JobSvcAddress = os.Getenv("JOB_ADDRESS")
     cfg.LogLevel, _ = strconv.Atoi(os.Getenv("LOG_LEVEL"))
     cfg.LogTimeFormat = os.Getenv("LOG_TIME")
   }
@@ -84,60 +79,28 @@ func RunServer() error {
     return fmt.Errorf("invalid TCP port for http server: '%s'", cfg.HTTPPort)
   }
 
-  // add MySQL driver specific parameter to parse date/time
-  // Drop it for another database
-  param := "parseTime=true"
-
-  // for non localhost db %s:%s@tcp(%s)/%s?%s
-  // currently set for localhost
-  dsn := fmt.Sprintf("%s:%s@tcp(%s)/%s?%s",
-    cfg.DatastoreDBUser,
-    cfg.DatastoreDBPassword,
-    cfg.DatastoreDBHost,
-    cfg.DatastoreDBSchema,
-    param)
-  db, err := sql.Open("mysql", dsn)
+  // SET up mongo client
+  // retry := false
+  clientOptions := options.Client().ApplyURI(cfg.MongoAddress)
+  client, err := mongo.Connect(context.TODO(), clientOptions)
   if err != nil {
-    return fmt.Errorf("failed to open database: %v", err)
+    return err
   }
-  defer db.Close()
-  db.SetMaxIdleConns(10)
-  err = db.Ping()
-  if err != nil {
-    return fmt.Errorf("failed to ping database: %v", err)
-  }
+  collection := client.Database(cfg.MongoName).Collection(cfg.MongoCollection)
 
   // create repository
-  repository := v1.NewTeamRepository(db)
+  repository := v1.NewCompanyRepository(collection)
+
+  // create auth service
+  tokenService := v1.NewTokenService()
+
+  // pass in fields of handler directly to method
+  v1API := v1.NewCompanyServiceServer(repository, tokenService) // may need to add Job Service address
 
   // initialize logger
   if err := logger.Init(cfg.LogLevel, cfg.LogTimeFormat); err != nil {
     return fmt.Errorf("failed to initialize logger: %v", err)
   }
 
-  // pass in fields of handler directly to method
-  v1API := v1.NewTeamServiceServer(repository, cfg.UserSvcAddress)
-
-  return teamGrpc.RunServer(ctx, v1API, cfg.GRPCPort)
-}
-
-func initRedis(address string) *cache.Codec {
-  ring := redis.NewRing(&redis.RingOptions{
-    Addrs: map[string]string{
-      "server1": ":" + address,
-    },
-  })
-
-  codec := &cache.Codec{
-    Redis: ring,
-
-    Marshal: func(v interface{}) ([]byte, error) {
-      return msgpack.Marshal(v)
-    },
-    Unmarshal: func(b []byte, v interface{}) error {
-      return msgpack.Unmarshal(b, v)
-    },
-  }
-
-  return codec
+  return companyGrpc.RunServer(ctx, v1API, cfg.GRPCPort)
 }
