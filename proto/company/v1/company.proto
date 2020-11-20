@@ -1,3 +1,96 @@
 syntax = "proto3";
 
 package company;
+
+service CompanyService {
+  rpc CreateCompany(UpsertRequest) returns (UpsertResponse) {}
+
+  rpc GetAuth(UpsertRequest) returns (AuthResponse) {}
+
+  rpc Login(UpsertRequest) returns (UpsertResponse) {}
+
+  rpc UpdateCompany(UpsertRequest) returns (UpsertResponse) {}
+
+  rpc DeleteCompany(DeleteRequest) returns (DeleteResponse) {}
+
+  rpc GetById(FindRequest) returns (FindResponse) {}
+
+  rpc GetByEmail(FindRequest) returns (FindResponse) {}
+
+  rpc FilterCompanies(FindRequest) returns (FindResponse) {}
+
+  rpc ValidateToken(ValidateRequest) returns (ValidateResponse) {}
+}
+
+
+message UpsertResponse {
+  string api = 1;
+  string status = 2;
+  string id = 3;
+  int64 matched = 4;
+  int64 modified = 5;
+  string token = 6;
+}
+
+message AuthResponse {
+  string api = 1;
+  Company company = 2;
+  string status = 3;
+}
+
+message UpsertRequest {
+  string api = 1;
+  Company company = 2;
+  string id = 3;
+  string email = 4;
+  string password = 5;
+  string name = 6;
+  string token = 7;
+}
+
+message FindResponse {
+  string api = 1;
+  repeated Company companies = 2;
+  string status = 3;
+  Company company = 4;
+}
+
+message FindRequest {
+  string api = 1;
+  string id = 2;
+  string name = 3;
+  string blank = 4;
+  int32 page = 5;
+  int32 limit = 6;
+  string email = 7;
+}
+
+message DeleteResponse {
+  string api = 1;
+  string status = 2;
+  int64 count = 3;
+}
+
+message DeleteRequest {
+  string api = 1;
+  string id = 2;
+}
+
+message ValidateResponse {
+  bool valid = 1;
+  string company_id = 2;
+}
+
+message ValidateRequest {
+  string token = 1;
+}
+
+message Company {
+  string email = 1;
+  string password = 2;
+  string name = 3;
+  int32 last_active = 4;
+  string mission = 5;
+  string location = 6;
+  string id = 7;
+}
