@@ -133,7 +133,7 @@ func (s *CompanyRepository) GetByName(name string) (*Company, error) {
   return &company, nil
 }
 
-func (s *CompanyRepository) UpdateActive(id string) (, error) {
+func (s *CompanyRepository) UpdateActive(id string) ('whatever type now.Unix() returns', error) {
 
   now := time.Now()
   secs := now.Unix()
@@ -165,10 +165,8 @@ func (s *CompanyRepository) UpdateActive(id string) (, error) {
   )
 
   if err != nil {
-    return -1, -1, err
+    return nil, err
   }
 
-  return result.MatchedCount, result.ModifiedCount, nil
-
-  return &company, nil
+  return secs, nil
 }
