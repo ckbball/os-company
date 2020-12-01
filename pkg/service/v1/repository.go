@@ -2,6 +2,7 @@ package v1
 
 import (
   "context"
+  "time"
 
   v1 "github.com/ckbball/os-company/pkg/api/v1"
   "go.mongodb.org/mongo-driver/bson"
@@ -18,6 +19,7 @@ type repository interface {
   GetByEmail(string) (*Company, error)
   GetByName(string) (*Company, error)
   FilterCompanys(*v1.FindRequest) ([]*Company, error)
+  UpdateActive(string) (int64, error)
 }
 
 type CompanyRepository struct {
@@ -127,6 +129,46 @@ func (s *CompanyRepository) GetByName(name string) (*Company, error) {
   if err != nil {
     return nil, err
   }
+
+  return &company, nil
+}
+
+func (s *CompanyRepository) UpdateActive(id string) (, error) {
+
+  now := time.Now()
+  secs := now.Unix()
+
+  var company Company
+  err := s.cs.FindOne(context.TODO(), Company{id: id}).Decode(&company)
+  if err != nil {
+    return nil, err
+  }
+
+  primitiveId, _ := primitive.ObjectIDFromHex(id)
+
+  insertCompany := bson.D{
+    {"email", company.Email},
+    {"password", company.Password},
+    {"name", company.Name},
+    {"mission", company.Mission},
+    {"last_active", secs},
+    {"location", company.Location},
+  }
+
+  result, err := repository.cs.UpdateOne(context.TODO(),
+    bson.D{
+      {"_id", primitiveId},
+    },
+    bson.D{
+      {"$set", insertCompany},
+    },
+  )
+
+  if err != nil {
+    return -1, -1, err
+  }
+
+  return result.MatchedCount, result.ModifiedCount, nil
 
   return &company, nil
 }

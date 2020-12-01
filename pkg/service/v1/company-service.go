@@ -61,3 +61,43 @@ func (s *handler) CreateCompany(ctx context.Context, req *v1.UpsertRequest) (*v1
     // maybe in future add more data to response about the added user.
   }, nil
 }
+
+func (s *handler) Login(ctx context.Context, req *v1.UpsertRequest) (*v1.UpsertResponse, error) {
+  // check api version
+  if err := s.checkAPI(req.Api); err != nil {
+    return nil, err
+  }
+
+  // get company from email
+  company, err := s.repo.GetByEmail(req.Email)
+  if err != nil {
+    return nil, err
+  }
+
+  // Compare given password to stored hash
+  if err = bcrypt.CompareHashAndPassword([]byte(company.Password), []byte(req.Password)); err != nil {
+    return nil, err
+  }
+
+  intId := company.Id.Hex()
+
+  companyModel := &v1.Company{
+    Id:       intId, //
+    Email:    company.Email,
+    Password: company.Password,
+  }
+
+  // generate new token
+  token, err := s.tokenService.Encode(companyModel)
+  if err != nil {
+    return nil, err
+  }
+
+  // return
+  return &v1.UpsertResponse{
+    Api:    apiVersion,
+    Status: "Success",
+    Token:  token,
+    // maybe in future add more data to response about the added company.
+  }, nil
+}
