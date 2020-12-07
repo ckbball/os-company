@@ -126,3 +126,17 @@ func (s *handler) GetAuth(ctx context.Context, req *v1.UpsertRequest) (*v1.AuthR
   }, nil
 
 }
+
+// this func takes database model of Company and exports it to gRPC message model Company
+func exportCompanyModel(company *Company) *v1.Company {
+  outId := company.Id.Hex()
+  out := &v1.Company{
+    Id:         outId,
+    LastActive: int32(company.LastActive),
+    Name:       company.Name,
+    Mission:    company.Mission,
+    Location:   company.Location,
+    Email:      company.Email,
+  }
+  return out
+}
