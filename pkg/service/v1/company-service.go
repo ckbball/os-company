@@ -187,6 +187,36 @@ func (s *handler) UpdateCompany(ctx context.Context, req *v1.UpsertRequest) (*v1
   }, nil
 }
 
+func (s *handler) DeleteCompany(ctx context.Context, req *v1.DeleteRequest) (*v1.DeleteResponse, error) {
+  // check api version
+  if err := s.checkAPI(req.Api); err != nil {
+    return nil, err
+  }
+
+  reqToken := req.Token
+  // validate the token company and request company
+  claims, err := s.tokenService.Decode(reqToken)
+  if err != nil {
+    return nil, err
+  }
+
+  // if token Company != req Company or there is no company id in claims return error
+  if claims.Company.Id != req.Id || claims.Company.Id == "" {
+    return nil, errors.New("Invalid Token")
+  }
+
+  count, err := s.repo.Delete(req.Id)
+  if err != nil {
+    return nil, err
+  }
+
+  return &v1.DeleteResponse{
+    Api:    req.Api,
+    Status: "Deleted",
+    Count:  count,
+  }, nil
+}
+
 // this func takes database model of Company and exports it to gRPC message model Company
 func exportCompanyModel(company *Company) *v1.Company {
   outId := company.Id.Hex()
