@@ -140,3 +140,21 @@ func exportCompanyModel(company *Company) *v1.Company {
   }
   return out
 }
+
+// this func takes a slice of database model of Companys and exports it to gRPC message model Companys
+func exportCompanyModels(companys []*Company) []*v1.Company {
+  out := []*v1.Company{}
+  for _, element := range companys {
+    outId := element.Id.Hex()
+    company := &v1.Company{
+      Id:         outId,
+      LastActive: int32(company.LastActive),
+      Firstname:  company.Firstname,
+      Lastname:   company.Lastname,
+      Phone:      company.Phone,
+      Email:      company.Email,
+    }
+    out = append(out, company)
+  }
+  return out
+}
