@@ -93,6 +93,12 @@ func (s *handler) Login(ctx context.Context, req *v1.UpsertRequest) (*v1.UpsertR
     return nil, err
   }
 
+  // Update the Company's LastActive field in the database
+  _, err = s.repo.UpdateActive(intId)
+  if err != nil {
+    return nil, err
+  }
+
   // return
   return &v1.UpsertResponse{
     Api:    apiVersion,
@@ -114,6 +120,12 @@ func (s *handler) GetAuth(ctx context.Context, req *v1.UpsertRequest) (*v1.AuthR
   company, err := s.repo.GetById(claims.Company.Id)
   if err != nil {
     return nil, errors.New("Invalid Token")
+  }
+
+  // Update the Company's LastActive field in the database
+  _, err = s.repo.UpdateActive(claims.Company.Id)
+  if err != nil {
+    return nil, err
   }
 
   out := exportCompanyModel(company)
@@ -173,6 +185,12 @@ func (s *handler) UpdateCompany(ctx context.Context, req *v1.UpsertRequest) (*v1
 
   // update company model getting how many entries matched and modified (both should be 1)
   match, modified, err := s.repo.Update(req.Company, req.Id)
+  if err != nil {
+    return nil, err
+  }
+
+  // Update the Company's LastActive field in the database
+  _, err = s.repo.UpdateActive(req.Id)
   if err != nil {
     return nil, err
   }

@@ -133,7 +133,7 @@ func (s *CompanyRepository) GetByName(name string) (*Company, error) {
   return &company, nil
 }
 
-func (s *CompanyRepository) UpdateActive(id string) ('whatever type now.Unix() returns', error) {
+func (s *CompanyRepository) UpdateActive(id string) (int64, error) {
 
   now := time.Now()
   secs := now.Unix()
