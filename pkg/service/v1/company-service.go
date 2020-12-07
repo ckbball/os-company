@@ -217,6 +217,24 @@ func (s *handler) DeleteCompany(ctx context.Context, req *v1.DeleteRequest) (*v1
   }, nil
 }
 
+func (s *handler) ValidateToken(ctx context.Context, req *v1.ValidateRequest) (*v1.ValidateResponse, error) {
+  // Decode token
+  claims, err := s.tokenService.Decode(req.Token)
+
+  if err != nil {
+    return nil, err
+  }
+
+  if claims.Company.Id == "" {
+    return nil, errors.New("invalid Company")
+  }
+
+  return &v1.ValidateResponse{
+    Valid:     true,
+    CompanyId: claims.Company.Id,
+  }, nil
+}
+
 // this func takes database model of Company and exports it to gRPC message model Company
 func exportCompanyModel(company *Company) *v1.Company {
   outId := company.Id.Hex()
