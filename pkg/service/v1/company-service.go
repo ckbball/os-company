@@ -144,6 +144,49 @@ func (s *handler) GetByEmail(ctx context.Context, req *v1.FindRequest) (*v1.Find
   }, nil
 }
 
+func (s *handler) UpdateCompany(ctx context.Context, req *v1.UpsertRequest) (*v1.UpsertResponse, error) {
+  // check api version
+  if err := s.checkAPI(req.Api); err != nil {
+    return nil, err
+  }
+
+  reqToken := req.Token
+  // validate the token company and request company
+  claims, err := s.tokenService.Decode(reqToken)
+  if err != nil {
+    return nil, err
+  }
+
+  // if token Company != req Company or there is no company id in claims return error
+  if claims.Company.Id != req.Id || claims.Company.Id == "" {
+    return nil, errors.New("Invalid Token")
+  }
+
+  // generate hashed password and save to model
+  if req.Company.Password != "" {
+    hashedPass, err := bcrypt.GenerateFromPassword([]byte(req.Company.Password), bcrypt.DefaultCost)
+    if err != nil {
+      return nil, errors.New(fmt.Sprintf("error hashing password: %v", err))
+    }
+    req.Company.Password = string(hashedPass)
+  }
+
+  // update company model getting how many entries matched and modified (both should be 1)
+  match, modified, err := s.repo.Update(req.Company, req.Id)
+  if err != nil {
+    return nil, err
+  }
+
+  // return
+  return &v1.UpsertResponse{
+    Api:      apiVersion,
+    Status:   "test",
+    Matched:  match,
+    Modified: modified,
+    // maybe in future add more data to response about the added company.
+  }, nil
+}
+
 // this func takes database model of Company and exports it to gRPC message model Company
 func exportCompanyModel(company *Company) *v1.Company {
   outId := company.Id.Hex()
