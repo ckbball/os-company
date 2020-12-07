@@ -101,3 +101,28 @@ func (s *handler) Login(ctx context.Context, req *v1.UpsertRequest) (*v1.UpsertR
     // maybe in future add more data to response about the added company.
   }, nil
 }
+
+func (s *handler) GetAuth(ctx context.Context, req *v1.UpsertRequest) (*v1.AuthResponse, error) {
+
+  reqToken := req.Token
+  // validate the token company and request company
+  claims, err := s.tokenService.Decode(reqToken)
+  if err != nil {
+    return nil, err
+  }
+
+  company, err := s.repo.GetById(claims.Company.Id)
+  if err != nil {
+    return nil, errors.New("Invalid Token")
+  }
+
+  out := exportCompanyModel(company)
+
+  return &v1.AuthResponse{
+    Api:     apiVersion,
+    Status:  "test",
+    Company: out,
+    // maybe in future add more data to response about the added company.
+  }, nil
+
+}
