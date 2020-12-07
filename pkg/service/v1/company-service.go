@@ -124,7 +124,24 @@ func (s *handler) GetAuth(ctx context.Context, req *v1.UpsertRequest) (*v1.AuthR
     Company: out,
     // maybe in future add more data to response about the added company.
   }, nil
+}
 
+func (s *handler) GetByEmail(ctx context.Context, req *v1.FindRequest) (*v1.FindResponse, error) {
+
+  // fetch company from repo by email
+  company, err := s.repo.GetByEmail(req.Email)
+  if err != nil {
+    return nil, err
+  }
+
+  out := exportCompanyModel(company)
+
+  return &v1.FindResponse{
+    Api:     apiVersion,
+    Status:  "test",
+    Company: out,
+    // maybe in future add more data to response about the added company.
+  }, nil
 }
 
 // this func takes database model of Company and exports it to gRPC message model Company
